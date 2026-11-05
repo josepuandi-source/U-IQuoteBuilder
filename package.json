@@ -1,0 +1,8 @@
+{
+  "name": "uandi-quote-builder",
+  "private": true,
+  "description": "U&I Global student visa quotation builder. Static site, no build step.",
+  "scripts": {
+    "dev": "npx --yes serve@14.2.3 . -l 3000"
+  }
+}
