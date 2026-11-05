@@ -40,7 +40,7 @@ Edit `email` in `assets/config.js`. Placeholders: `{name}`, `{options}` (option/
   - Row kinds: `meta`, `head`, `row`, `sub` (tuition total), `section`, `total`, `php`, `note`.
 - `tableHTML` — email table. Inline styles only, because Gmail and Outlook strip `<style>` blocks on paste.
 - `emailText` — plain-text version.
-- `buildPDF` — jsPDF + autoTable. Standard PDF fonts lack the ₱ glyph, so the PDF writes "PHP" instead (`clean()`).
+- `buildPDF` — jsPDF + autoTable. Logo at the top is `assets/logo-pdf.png` (preloaded as a data URL; falls back to the org name as text). All PDF text sizes come from `PT`, scaled by `FS` (0.7225); table width, padding and amount column by `TS` (0.85), centred on the page. Only the PDF is affected, not the on-screen or email copy. Standard PDF fonts lack the ₱ glyph, so the PDF writes "PHP" instead (`clean()`).
 - Amount parsing: `parse()` accepts "2,078.70", "$2,078.70", "-23,568". Anything non-numeric ("FREE", "TBA at Expo", "$290/week") is shown as typed and left out of totals.
 
 ## Rules

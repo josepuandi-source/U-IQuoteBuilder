@@ -372,19 +372,31 @@ $('#btn-new').addEventListener('click',()=>{
   renderAll(); toast('Started a new quote.');
 });
 
+/* PDF logo, loaded once as a data URL so jsPDF can embed it (keeps transparency). */
+let PDF_LOGO=null;
+fetch('/assets/logo-pdf.png').then(r=>r.ok?r.blob():null).then(b=>{ if(!b) return;
+  const fr=new FileReader(); fr.onload=()=>{const im=new Image(); im.onload=()=>{PDF_LOGO={data:fr.result,ratio:im.naturalHeight/im.naturalWidth};}; im.src=fr.result;}; fr.readAsDataURL(b);
+}).catch(()=>{});
+/* PDF sizing. FS scales all text (0.7225 = two 15% reductions from the original design).
+   TS scales table width, padding and the amount column (0.85 = 15% narrower); the
+   content block stays centred on the page. */
+const FS=0.7225, TS=0.85, PT={title:16*FS, meta:10*FS, option:11.5*FS, body:9.5*FS, note:8.5*FS};
 function buildPDF(){
   const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'a4'});
-  const W=doc.internal.pageSize.getWidth(), M=40, clean=s=>String(s).replace(/₱/g,'PHP ');
-  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setFillColor(0,125,116);doc.rect(0,0,W,8,'F');doc.setTextColor(0,125,116);doc.text(C.pdfTitle,M,52);
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(90,100,115);
-  doc.text(C.org,M,68);
+  const W=doc.internal.pageSize.getWidth(), M=(W-(W-80)*TS)/2, clean=s=>String(s).replace(/₱/g,'PHP ');
+  doc.setFillColor(0,125,116);doc.rect(0,0,W,8,'F');
+  let top=30;
+  if(PDF_LOGO){ const lw=150, lh=lw*PDF_LOGO.ratio; doc.addImage(PDF_LOGO.data,'PNG',M,top,lw,lh); top+=lh+22; }
+  else { doc.setFont('helvetica','bold');doc.setFontSize(PT.title);doc.setTextColor(0,125,116);doc.text(C.org,M,top+12); top+=34; }
+  doc.setFont('helvetica','bold');doc.setFontSize(PT.title);doc.setTextColor(0,125,116);doc.text(C.pdfTitle,M,top);
+  doc.setFont('helvetica','normal');doc.setFontSize(PT.meta);doc.setTextColor(90,100,115);
   const d=new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'});
-  doc.text((Q.student?'Prepared for '+Q.student+'   ·   ':'')+d,W-M,68,{align:'right'});
-  let y=86; const opts=optionsToRender(), multi=opts.length>1;
+  doc.text((Q.student?'Prepared for '+Q.student+'   ·   ':'')+d,W-M,top,{align:'right'});
+  let y=top+16; const opts=optionsToRender(), multi=opts.length>1;
   const toBody=rows=>rows.map(r=>{
     const red=r.est?[192,0,0]:[18,17,15];
     if(r.k==='section') return [{content:r.c[0],colSpan:2,styles:{fillColor:[229,244,242],textColor:[0,102,95],fontStyle:'bold'}}];
-    if(r.k==='note') return [{content:r.c[0],colSpan:2,styles:{textColor:[192,0,0],fontStyle:'italic',fontSize:8.5}}];
+    if(r.k==='note') return [{content:r.c[0],colSpan:2,styles:{textColor:[192,0,0],fontStyle:'italic',fontSize:PT.note}}];
     if(r.k==='head') return [{content:r.c[0],styles:{fillColor:[0,125,116],textColor:255,fontStyle:'bold'}},{content:r.c[1],styles:{fillColor:[0,125,116],textColor:255,fontStyle:'bold',halign:'right'}}];
     if(r.k==='meta') return [{content:r.c[0],styles:{fillColor:[242,250,249],fontStyle:r.bold?'bold':'normal',textColor:r.bold?[0,125,116]:[18,17,15]}},{content:r.c[1],styles:{fillColor:[242,250,249]}}];
     const bold=['total','php','sub'].includes(r.k)?'bold':'normal', fill=r.k==='total'?[210,238,234]:r.k==='php'?[242,250,249]:false;
@@ -392,12 +404,12 @@ function buildPDF(){
   });
   opts.forEach(o=>{
     const {R,P}=rowsFor(o);
-    if(multi){ if(y>700){doc.addPage();y=50;} doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(27,36,48);
-      doc.text('Option '+(Q.options.indexOf(o)+1)+': '+(o.course||'Course'),M,y+6); y+=16; }
+    if(multi){ if(y>700){doc.addPage();y=50;} doc.setFont('helvetica','bold');doc.setFontSize(PT.option);doc.setTextColor(27,36,48);
+      doc.text('Option '+(Q.options.indexOf(o)+1)+': '+(o.course||'Course'),M,y+6); y+=14; }
     [R,P].filter(Boolean).forEach(rows=>{
       doc.autoTable({startY:y,margin:{left:M,right:M},theme:'grid',body:toBody(rows),
-        styles:{font:'helvetica',fontSize:9.5,cellPadding:5,lineColor:[207,227,224],lineWidth:.6,textColor:[27,36,48],valign:'top'},
-        columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:130}}});
+        styles:{font:'helvetica',fontSize:PT.body,cellPadding:5*FS,lineColor:[207,227,224],lineWidth:.6,textColor:[27,36,48],valign:'top'},
+        columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:130*TS}}});
       y=doc.lastAutoTable.finalY+14;
     });
     y+=6;
