@@ -76,6 +76,33 @@ let MINE=[]; try{const m=JSON.parse(localStorage.getItem(MY_STORE)||'[]'); if(Ar
 const saveMine=()=>{try{localStorage.setItem(MY_STORE,JSON.stringify(MINE))}catch(e){}};
 const courseFrom=src=>{const [t,i]=String(src).split(':'); return t==='m'?MINE[+i]:COURSES[+i];};
 
+/* ---------- live exchange rate ----------
+   /api/rate (Vercel function, Wise first) answers on the live site. When that is
+   missing (local preview) the browser asks the ECB rate directly. If both fail,
+   the last rate in Rates and standard fees stays in use. */
+let LIVE=null, LIVE_STATE='loading';
+async function fetchRate(){
+  const tries=['/api/rate','https://api.frankfurter.dev/v1/latest?base=AUD&symbols=PHP'];
+  for(const u of tries){
+    try{
+      const r=await fetch(u,{cache:'no-cache'}); if(!r.ok) continue;
+      const d=await r.json(), rate=d.rate??(d.rates&&d.rates.PHP);
+      if(typeof rate==='number'&&rate>10&&rate<100) return {rate,source:d.source||'European Central Bank',time:d.time||Date.parse(d.date+'T16:00:00Z')};
+    }catch(e){}
+  }
+  return null;
+}
+function applyLive(){
+  if(S.liveRate&&LIVE) S.rate=LIVE.rate.toFixed(2);
+  const el=$('#s-rate'); if(el){el.value=S.rate; el.readOnly=!!S.liveRate;}
+  const cb=$('#s-live'); if(cb) cb.checked=!!S.liveRate;
+  const n=$('#rate-note'); if(!n) return;
+  const when=LIVE&&new Date(LIVE.time).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+  n.textContent=!S.liveRate?'Your own rate. Tick the box for the live rate.'
+    :LIVE?'Live '+LIVE.source+' rate, '+when+'.'
+    :LIVE_STATE==='loading'?'Checking the live rate…':'Live rate unavailable. Using '+S.rate+'.';
+}
+
 /* ---------- row model (shared by HTML / text / PDF) ---------- */
 function sssfLabel(o,it){
   if(it.key!=='sssf'||!o.sssfDetail) return it.label;
@@ -243,7 +270,7 @@ function renderPreview(){
 function renderAll(){
   $('#g-student').value=Q.student||''; $('#g-intro').checked=!!Q.intro; $('#g-all').checked=!!Q.all;
   Object.keys(DEFAULT_SETTINGS).forEach(k=>{const el=$('#s-'+k); if(el) el.value=S[k];});
-  renderForm(); renderPreview(); save();
+  applyLive(); renderForm(); renderPreview(); save();
 }
 
 /* ---------- events ---------- */
@@ -291,7 +318,7 @@ document.addEventListener('input',e=>{
   const el=e.target, val=el.type==='checkbox'?el.checked:el.value;
   if(el.dataset.actLoad){ if(val!=='') loadCourse(val); return; }
   if(el.dataset.g){Q[el.dataset.g]=val;}
-  else if(el.dataset.s){S[el.dataset.s]=val;}
+  else if(el.dataset.s){S[el.dataset.s]=val; if(el.dataset.s==='liveRate') applyLive();}
   else if(el.dataset.b){
     Q.example=false;
     setPath(cur(),el.dataset.b,val);
@@ -389,4 +416,5 @@ $('#btn-pdf').addEventListener('click',async()=>{
 });
 
 renderAll();
+fetchRate().then(r=>{LIVE=r; LIVE_STATE=r?'ok':'failed'; applyLive(); renderPreview(); save();});
 })();

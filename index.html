@@ -53,7 +53,8 @@
         <details class="settings" id="settings">
           <summary>Rates and standard fees</summary>
           <div class="fields">
-            <label class="f">AUD → PHP rate<input type="text" class="num" id="s-rate" data-s="rate" inputmode="decimal"></label>
+            <label class="f">AUD → PHP rate<input type="text" class="num" id="s-rate" data-s="rate" inputmode="decimal"><span class="hint" id="rate-note" aria-live="polite"></span></label>
+            <div class="f" style="justify-content:flex-start;padding-top:22px"><label class="check"><input type="checkbox" id="s-live" data-s="liveRate"> Use live Wise rate</label></div>
             <label class="f">Student visa (subclass 500)<input type="text" class="num" id="s-visa" data-s="visa" inputmode="decimal"></label>
             <label class="f">Dependant visa fee<input type="text" class="num" id="s-depVisa" data-s="depVisa" inputmode="decimal"></label>
             <label class="f">Student Support Services Fee<input type="text" class="num" id="s-sssf" data-s="sssf" inputmode="decimal"></label>

@@ -2,7 +2,7 @@
 
 Internal web tool for U&I Global staff. Staff enter a course and its fees, and the tool produces a student visa cost quotation they can paste into an email (formatted table), copy as plain text (Messenger/Viber), or download as a PDF. It replaces copying blocks around the "U&I PH Team – Quotation Computation Template" Google Sheet.
 
-Static site. No framework, no build step, no backend. Deployed on Vercel (Framework preset: Other).
+Static site. No framework, no build step. The only server code is `api/rate.js`, a Vercel function that returns the live AUD→PHP rate. Deployed on Vercel (Framework preset: Other).
 
 ## Files
 
@@ -13,11 +13,15 @@ Static site. No framework, no build step, no backend. Deployed on Vercel (Framew
 | `assets/app.js` | All logic: state, form rendering, totals, email HTML, plain text, PDF | Only for behaviour changes |
 | `assets/styles.css` | U&I brand styles (teal #009C91 / #007D74 on cream #FFFDFA, Kanit + IBM Plex Sans, Yellowtail script for "Global") | Visual changes |
 | `index.html` | Page shell; loads CDN libs then config → courses → app, in that order | Rarely |
+| `api/rate.js` | Live AUD→PHP rate: Wise (`wise.com/rates/live`, undocumented) first, ECB via Frankfurter as backup, cached 1 hour at Vercel's edge. The page falls back to calling Frankfurter directly when `/api/rate` is missing (local preview) | Only if Wise changes |
 | `vercel.json` | noindex + no-cache headers on `/assets` so config edits reach staff on next load | Rarely |
 
 ## Common tasks
 
-**Fee or rate changed (visa fee, living cost, PHP rate, support fee)**
+**Exchange rate**
+Filled from the live Wise rate on each page load ("Use live Wise rate", on by default; `liveRate` in `config.js`). Staff can untick it and type their own. `settings.rate` is only the fallback.
+
+**Fee or rate changed (visa fee, living cost, support fee)**
 1. Edit the value in `assets/config.js` under `settings`.
 2. Change `version` in the same file to today's date. Without this, staff who have used the tool keep their old saved values (settings are stored per browser in localStorage and only reset when `version` changes).
 
@@ -41,7 +45,7 @@ Edit `email` in `assets/config.js`. Placeholders: `{name}`, `{options}` (option/
 
 ## Rules
 
-- Keep it static: no build step, no npm dependencies at runtime. Libraries load from cdnjs, pinned to exact versions.
+- Keep it static: no build step, no npm dependencies at runtime. Server code stays limited to `api/rate.js`, and it never receives student data. Libraries load from cdnjs, pinned to exact versions.
 - Never store or send student data to a server. Quotes live only in the staff member's browser (localStorage keys `uiq-builder-v1` and `uiq-my-courses-v1`).
 - Estimate lines must stay red (#c00000) in email and PDF; the footer note promises that.
 - Keep `config.js` and `courses.js` readable for non-developers: plain values, comments in plain English.

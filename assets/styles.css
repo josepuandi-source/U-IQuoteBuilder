@@ -91,3 +91,6 @@ details.settings .fields{margin-top:12px}
 .chip.ok{border-color:var(--ok);color:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:.9rem;z-index:20}
 @media (prefers-reduced-motion:no-preference){.toast{animation:pop .18s ease-out}@keyframes pop{from{transform:translate(-50%,6px);opacity:0}}}
+
+.f input[readonly]{opacity:.7;cursor:default}
+#rate-note{margin:4px 0 0;font-size:.8rem}

@@ -11,16 +11,17 @@
    used the tool keep their old saved values.
    ============================================================ */
 window.QUOTE_CONFIG = {
-  version: "2026-11-05",
+  version: "2026-11-05-2",
 
   org: "U&I Global",
 
   /* Defaults shown under "Rates and standard fees". Staff can
      override these in their own browser. */
   settings: {
-    rate: "44",                 // AUD -> PHP conversion
-    visa: "2,078.70",           // Student visa (subclass 500)
-    depVisa: "1,226.72",        // Dependant (partner) visa
+    rate: "44",                 // AUD -> PHP conversion, used when the live rate is off or unreachable
+    liveRate: true,             // true = fill the rate from Wise automatically on each page load
+    visa: "2,050.00",           // Student visa (subclass 500), base fee
+    depVisa: "1,255.00",        // Dependant (partner) visa, base fee
     sssf: "660",                // Student Support Services Fee, single
     sssfDep: "770",             // Student Support Services Fee, with dependant
     living: "29,710",           // Living cost, student, 12 months

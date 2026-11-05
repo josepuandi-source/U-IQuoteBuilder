@@ -22,7 +22,7 @@ npx vercel --prod   # production deploy
 
 | To change | Edit | Then |
 |---|---|---|
-| Visa fee, living costs, PHP rate, support fee, booking link | `assets/config.js` → `settings` | Change `version` in the same file to today's date |
+| Visa fee, living costs, fallback PHP rate, support fee, booking link | `assets/config.js` → `settings` | Change `version` in the same file to today's date |
 | Fee line names, red note, email wording | `assets/config.js` | — |
 | Saved courses in the "Load a saved course" menu (for everyone) | `assets/courses.js` | — |
 
@@ -38,6 +38,7 @@ npm run dev    # http://localhost:3000
 
 ## Notes
 
+- The AUD → PHP rate fills in automatically from Wise (backup: European Central Bank) each time the page loads. Untick "Use live Wise rate" to type your own.
 - "Save as a course" adds the current option to that person's own menu, in their browser only. To share a course with all staff, add it to `assets/courses.js`.
 - Quotes and staff overrides are saved in each person's browser only. Nothing is sent to a server.
 - The site is marked noindex so it won't show in search results, but anyone with the link can open it. For a password, turn on Vercel Deployment Protection (paid plans) or keep the link internal.
