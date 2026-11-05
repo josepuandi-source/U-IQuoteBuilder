@@ -24,6 +24,8 @@ Static site. No framework, no build step, no backend. Deployed on Vercel (Framew
 **Add or update a saved course**
 Add an object to `window.QUOTE_COURSES` in `assets/courses.js`. Fields are documented at the top of that file. Amounts are strings like `"26,000"`. Negative amounts are scholarships. Omit `pfcTuition` to leave the Proof of Financial Capacity table off.
 
+Staff can also click "Save as a course" to keep the current option in their own menu. Those live only in that browser (localStorage key `uiq-my-courses-v1`, same shape as `courses.js` entries) and show under "My saved courses". To share one with everyone, add it to `courses.js`.
+
 **Change email wording**
 Edit `email` in `assets/config.js`. Placeholders: `{name}`, `{options}` (option/options), `{these}` (this option/these options), `{link}` (booking link).
 
@@ -40,7 +42,7 @@ Edit `email` in `assets/config.js`. Placeholders: `{name}`, `{options}` (option/
 ## Rules
 
 - Keep it static: no build step, no npm dependencies at runtime. Libraries load from cdnjs, pinned to exact versions.
-- Never store or send student data to a server. Quotes live only in the staff member's browser (localStorage key `uiq-builder-v1`).
+- Never store or send student data to a server. Quotes live only in the staff member's browser (localStorage keys `uiq-builder-v1` and `uiq-my-courses-v1`).
 - Estimate lines must stay red (#c00000) in email and PDF; the footer note promises that.
 - Keep `config.js` and `courses.js` readable for non-developers: plain values, comments in plain English.
 - Australian English in UI copy.

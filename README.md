@@ -24,7 +24,7 @@ npx vercel --prod   # production deploy
 |---|---|---|
 | Visa fee, living costs, PHP rate, support fee, booking link | `assets/config.js` → `settings` | Change `version` in the same file to today's date |
 | Fee line names, red note, email wording | `assets/config.js` | — |
-| Saved courses in the "Load a saved course" menu | `assets/courses.js` | — |
+| Saved courses in the "Load a saved course" menu (for everyone) | `assets/courses.js` | — |
 
 Commit and push (or `npx vercel --prod`). Staff get the update on their next page load.
 
@@ -38,6 +38,7 @@ npm run dev    # http://localhost:3000
 
 ## Notes
 
+- "Save as a course" adds the current option to that person's own menu, in their browser only. To share a course with all staff, add it to `assets/courses.js`.
 - Quotes and staff overrides are saved in each person's browser only. Nothing is sent to a server.
 - The site is marked noindex so it won't show in search results, but anyone with the link can open it. For a password, turn on Vercel Deployment Protection (paid plans) or keep the link internal.
 - The PDF shows "PHP" instead of the ₱ sign because standard PDF fonts don't include it.

@@ -69,6 +69,12 @@ try{const raw=localStorage.getItem(STORE); if(raw){const d=JSON.parse(raw); if(d
 if(!Q) Q=sampleQuote(S);
 const save=()=>{try{localStorage.setItem(STORE,JSON.stringify({v:C.version,S,Q}))}catch(e){}};
 const cur=()=>Q.options[Q.active]||Q.options[0];
+/* Courses staff save themselves. Kept in this browser under their own key, so they
+   survive "New quote" and config version changes. Same shape as courses.js entries. */
+const MY_STORE='uiq-my-courses-v1';
+let MINE=[]; try{const m=JSON.parse(localStorage.getItem(MY_STORE)||'[]'); if(Array.isArray(m)) MINE=m;}catch(e){}
+const saveMine=()=>{try{localStorage.setItem(MY_STORE,JSON.stringify(MINE))}catch(e){}};
+const courseFrom=src=>{const [t,i]=String(src).split(':'); return t==='m'?MINE[+i]:COURSES[+i];};
 
 /* ---------- row model (shared by HTML / text / PDF) ---------- */
 function sssfLabel(o,it){
@@ -190,7 +196,12 @@ function tabsHTML(){
 const inp=(id,bind,val,cls='',ph='')=>`<input type="text" id="${id}" data-b="${bind}" value="${esc(val)}" class="${cls}" ${cls?'inputmode="decimal"':''} placeholder="${esc(ph)}">`;
 function formHTML(){
   const o=cur(), a=Q.active, T=totals(o);
-  const pick=COURSES.length?`<label class="f full">Load a saved course<select id="o${a}-load" data-act-load="1"><option value="">Choose a course to fill this option…</option>${COURSES.map((c,i)=>`<option value="${i}">${esc(c.name)}</option>`).join('')}</select></label>`:'';
+  const built=COURSES.map((c,i)=>`<option value="b:${i}">${esc(c.name)}</option>`).join('');
+  const mine=MINE.map((c,i)=>`<option value="m:${i}">${esc(c.name)}</option>`).join('');
+  const menu=MINE.length?(COURSES.length?`<optgroup label="U&amp;I courses">${built}</optgroup>`:'')+`<optgroup label="My saved courses">${mine}</optgroup>`:built;
+  const loadedMine=o.mine&&MINE.some(c=>c.name===o.mine);
+  const pick=`${(COURSES.length||MINE.length)?`<label class="f full">Load a saved course<select id="o${a}-load" data-act-load="1"><option value="">Choose a course to fill this option…</option>${menu}</select></label>`:''}
+    <div class="inline full"><button type="button" class="small" data-act="save-course">Save as a course</button>${loadedMine?`<button type="button" class="ghost small" data-act="rm-course">Remove “${esc(o.mine)}” from my courses</button>`:''}</div>`;
   let h=`<fieldset><legend class="label">Course</legend><div class="fields">${pick}
     <label class="f">Student location<select id="o${a}-mode" data-b="mode" data-struct="mode"><option ${o.mode==='OFFSHORE'?'selected':''}>OFFSHORE</option><option ${o.mode==='ONSHORE'?'selected':''}>ONSHORE</option></select></label>
     <div class="f" style="justify-content:flex-end"><label class="check"><input type="checkbox" id="o${a}-dep" data-b="dependent" data-struct="mode" ${o.dependent?'checked':''}> With dependant (partner)</label></div>
@@ -236,9 +247,36 @@ function renderAll(){
 }
 
 /* ---------- events ---------- */
-function loadCourse(i){
-  const c=COURSES[i]; if(!c) return;
+function courseOf(o){
+  const c={name:'',mode:o.mode,school:o.school,course:o.course,campus:o.campus,duration:o.duration,intake:o.intake,
+    tuition:clone(o.tuition.filter(t=>t.label||t.amount))};
+  const dep=o.items.find(x=>x.key==='deposit'); if(dep&&dep.amount) c.deposit=dep.amount;
+  const os=o.items.find(x=>x.key==='oshc'); if(os&&os.amount&&!o.dependent) c.oshc=os.amount;
+  if(o.pfc.on&&o.pfc.tuition) c.pfcTuition=o.pfc.tuition;
+  return c;
+}
+function saveCourse(){
   const o=cur();
+  if(!o.school&&!o.course){toast('Add a school or course name first.');return;}
+  const suggest=o.mine||[o.school,o.course,o.campus].filter(Boolean).join(' · ');
+  const name=(prompt('Name for this saved course (shown in the menu):',suggest)||'').trim(); if(!name) return;
+  const c=courseOf(o); c.name=name;
+  const at=MINE.findIndex(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(at>=0){ if(!confirm('“'+MINE[at].name+'” is already in your saved courses. Replace it?')) return; MINE[at]=c; }
+  else MINE.push(c);
+  MINE.sort((x,y)=>x.name.localeCompare(y.name));
+  o.mine=name; saveMine(); renderForm(); save();
+  toast((at>=0?'Updated ':'Saved ')+name+'. It is in the menu on this browser only.');
+}
+function removeCourse(){
+  const o=cur(), at=MINE.findIndex(x=>x.name===o.mine); if(at<0) return;
+  if(!confirm('Remove “'+o.mine+'” from your saved courses? The current quote is not changed.')) return;
+  MINE.splice(at,1); saveMine(); toast('Removed '+o.mine+'.'); delete o.mine; renderForm(); save();
+}
+function loadCourse(src){
+  const c=courseFrom(src); if(!c) return;
+  const o=cur();
+  if(String(src).startsWith('m:')) o.mine=c.name; else delete o.mine;
   o.mode=c.mode==='ONSHORE'?'ONSHORE':'OFFSHORE';
   ['school','course','campus','duration','intake'].forEach(k=>o[k]=c[k]||'');
   o.tuition=(c.tuition&&c.tuition.length)?clone(c.tuition):[{label:'',amount:''}];
@@ -251,7 +289,7 @@ function loadCourse(i){
 function setPath(obj,path,val){const ks=path.split('.');let t=obj;for(let i=0;i<ks.length-1;i++)t=t[ks[i]];t[ks[ks.length-1]]=val;}
 document.addEventListener('input',e=>{
   const el=e.target, val=el.type==='checkbox'?el.checked:el.value;
-  if(el.dataset.actLoad){ if(val!=='') loadCourse(+val); return; }
+  if(el.dataset.actLoad){ if(val!=='') loadCourse(val); return; }
   if(el.dataset.g){Q[el.dataset.g]=val;}
   else if(el.dataset.s){S[el.dataset.s]=val;}
   else if(el.dataset.b){
@@ -276,6 +314,8 @@ document.addEventListener('click',e=>{
     case 'add-i': o.items.push({key:null,label:'',amount:'',est:false}); break;
     case 'rm-i': o.items.splice(i,1); break;
     case 'reset': applyPreset(o,S,true); break;
+    case 'save-course': saveCourse(); return;
+    case 'rm-course': removeCourse(); return;
     default: return;
   }
   Q.example=false; renderForm(); renderPreview(); save();
